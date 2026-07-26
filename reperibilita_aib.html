@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Registro di inserimento e gestione dei turni di reperibilita AIB.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
+<title>Reperibilità AIB</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Text:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --forest-900:#0A1F33;
+  --forest-800:#0F2E4D;
+  --forest-750:#123A5E;
+  --forest-700:#17456E;
+  --forest-600:#1F5C8F;
+  --ember-500:#E85D04;
+  --ember-400:#F48C06;
+  --ember-glow:rgba(232,93,4,.35);
+  --ink-100:#F5F1E4;
+  --ink-300:#D9D3C0;
+  --ink-500:#A9B6A9;
+  --line:rgba(245,241,228,.12);
+  --line-strong:rgba(245,241,228,.22);
+  --danger:#C1121F;
+  --ok:#3E8E5A;
+  --warn:#E8A004;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(31,92,143,.38), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(232,93,4,.10), transparent 55%),
+    var(--forest-900);
+  color:var(--ink-100);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 20px 60px;}
+
+.setup-banner{
+  display:none;
+  background:linear-gradient(135deg,#3A2405,#241600);
+  border:1px solid var(--warn);
+  border-radius:var(--radius);
+  padding:16px 18px;margin-bottom:18px;
+  font-size:13.5px;line-height:1.55;
+}
+.setup-banner.show{display:block;}
+.setup-banner b{color:var(--warn);}
+.setup-banner code{
+  background:rgba(0,0,0,.35);padding:1px 6px;border-radius:4px;
+  font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+}
+
+header{
+  display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;
+  padding:18px 22px;border-radius:var(--radius);
+  background:linear-gradient(135deg,var(--forest-800),var(--forest-700));
+  border:1px solid var(--line-strong);
+  margin-bottom:18px;
+  position:relative;overflow:hidden;
+}
+header::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg, rgba(245,241,228,.035) 0 2px, transparent 2px 26px);
+  pointer-events:none;
+}
+.brand{position:relative;z-index:1;display:flex;align-items:center;gap:14px;}
+.brand .logo{
+  width:52px;height:52px;flex:none;border-radius:8px;
+  background:var(--ink-100);padding:5px;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);
+}
+.brand .logo img{width:100%;height:100%;object-fit:contain;display:block;}
+.brand .brand-text{display:flex;flex-direction:column;}
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;
+  color:var(--ember-400);text-transform:uppercase;margin:0 0 4px;
+}
+h1{
+  font-family:'Big Shoulders Text',sans-serif;font-weight:800;
+  font-size:clamp(26px,4vw,38px);letter-spacing:.01em;text-transform:uppercase;
+  margin:0;line-height:1;
+}
+.clock{
+  position:relative;z-index:1;
+  font-family:'IBM Plex Mono',monospace;
+  background:rgba(14,42,30,.55);
+  border:1px solid var(--line-strong);
+  border-radius:8px;padding:10px 16px;text-align:right;
+}
+.clock .date{font-size:11px;letter-spacing:.12em;color:var(--ink-500);text-transform:uppercase;}
+.clock .time{font-size:22px;color:var(--ember-400);font-weight:600;letter-spacing:.05em;}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.stat{
+  background:var(--forest-800);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;
+}
+.stat .n{font-family:'Big Shoulders Text',sans-serif;font-size:30px;font-weight:700;color:var(--ink-100);line-height:1;}
+.stat .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-500);margin-top:6px;}
+
+.grid{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start;}
+@media (max-width:860px){.grid{grid-template-columns:1fr;} .stats{grid-template-columns:repeat(2,1fr);}}
+
+.panel{
+  background:var(--forest-800);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;
+}
+.panel h2{
+  font-family:'Big Shoulders Text',sans-serif;font-size:18px;letter-spacing:.04em;
+  text-transform:uppercase;margin:0 0 14px;color:var(--ink-100);
+  display:flex;align-items:center;gap:8px;
+}
+.panel h2::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ember-500);box-shadow:0 0 8px var(--ember-glow);}
+
+form{display:flex;flex-direction:column;gap:12px;}
+label{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-500);display:block;margin-bottom:5px;}
+input,select{
+  width:100%;background:var(--forest-900);border:1px solid var(--line-strong);color:var(--ink-100);
+  border-radius:7px;padding:9px 10px;font-family:'Inter',sans-serif;font-size:14px;
+}
+input::placeholder{color:var(--ink-500);}
+input:focus,select:focus{outline:2px solid var(--ember-400);outline-offset:1px;border-color:var(--ember-400);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.hint{font-size:11px;color:var(--ink-500);margin-top:2px;}
+
+button{
+  font-family:'Inter',sans-serif;font-weight:600;font-size:13px;cursor:pointer;
+  border-radius:7px;border:1px solid transparent;padding:10px 14px;
+}
+button:disabled{opacity:.5;cursor:not-allowed;}
+.btn-primary{background:var(--ember-500);color:#241000;border-color:var(--ember-500);}
+.btn-primary:hover{background:var(--ember-400);}
+.btn-ghost{background:transparent;color:var(--ink-100);border-color:var(--line-strong);}
+.btn-ghost:hover{border-color:var(--ember-400);color:var(--ember-400);}
+.btn-ghost.active{background:var(--ember-500);color:#241000;border-color:var(--ember-500);}
+.btn-danger{background:transparent;color:var(--danger);border-color:transparent;font-size:12px;padding:4px 8px;}
+.btn-danger:hover{text-decoration:underline;}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end;}
+.toolbar .field{flex:1;min-width:140px;}
+.toolbar .field label{margin-bottom:5px;}
+.io-buttons{display:flex;gap:8px;margin-left:auto;align-self:flex-end;}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+thead th{
+  text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-500);padding:8px 10px;border-bottom:1px solid var(--line-strong);
+}
+tbody td{padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tbody tr:hover{background:rgba(245,241,228,.03);}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:20px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.03em;white-space:nowrap;
+}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+.orario{font-family:'IBM Plex Mono',monospace;color:var(--ink-300);font-size:12.5px;}
+.empty{text-align:center;padding:40px 10px;color:var(--ink-500);}
+.empty b{color:var(--ink-100);}
+.status-line{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-500);margin-top:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.status-line span.live{color:var(--ok);}
+.status-line span.err{color:var(--danger);}
+#fileInput{display:none;}
+
+.btn-ghost.admin-on{background:rgba(62,142,90,.18);border-color:var(--ok);color:#8FE0AC;}
+.pending-banner{
+  display:none;
+  background:linear-gradient(135deg,#3A0F0F,#240808);
+  border:1px solid var(--danger);
+  border-radius:var(--radius);
+  padding:12px 16px;margin-bottom:14px;
+  font-size:13px;line-height:1.5;color:var(--ink-100);
+}
+.pending-banner.show{display:block;}
+.pending-banner b{color:#FF8A8A;}
+tr.row-pending{background:rgba(193,18,31,.08);}
+tr.row-pending:hover{background:rgba(193,18,31,.14);}
+.badge-pending{
+  display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.03em;
+  background:rgba(193,18,31,.22);color:#FF9E9E;white-space:nowrap;margin-left:6px;
+}
+.btn-confirm{background:transparent;color:var(--ok);border-color:transparent;font-size:12px;padding:4px 8px;}
+.btn-confirm:hover{text-decoration:underline;}
+.btn-deny{background:transparent;color:var(--warn);border-color:transparent;font-size:12px;padding:4px 8px;}
+.btn-deny:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="setup-banner" id="setupBanner">
+    <b>⚠ Collegamento non configurato.</b> Apri il file HTML con un editor di testo, cerca la riga
+    <code>const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbze7SyuOU0-hvV1eZHM4W3BATS_Yc2aE7t9L_RRyD-37PyELZ2F-uAahtYHRiS9ttV5/exec";</code> e sostituiscila con l'URL del tuo
+    Web App di Google Apps Script. Finché non lo fai, la pagina non può leggere né scrivere sul foglio Google.
+  </div>
+
+  <header>
+    <div class="brand">
+      <div class="logo"><img src="data:image/png;base64,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" alt="Protezione Civile Regione Emilia-Romagna"></div>
+      <div class="brand-text">
+        <p class="eyebrow">Coordinamento AIB · Antincendio Boschivo</p>
+        <h1>Registro Reperibilità</h1>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="date" id="clockDate">—</div>
+      <div class="time" id="clockTime">--:--:--</div>
+    </div>
+    <a class="btn-ghost" href="matrice_turni.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;">📋 Vista matrice</a>
+    <a class="btn-ghost" href="activity.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;">🧭 Activity — Squadre</a>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Turni registrati</div></div>
+    <div class="stat"><div class="n" id="statPersonale">0</div><div class="l">Personale attivo</div></div>
+    <div class="stat"><div class="n" id="statOggi">0</div><div class="l">Turni oggi</div></div>
+    <div class="stat"><div class="n" id="statSettimana">0</div><div class="l">Prossimi 7 giorni</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Nuovo turno</h2>
+      <form id="turnoForm">
+        <div>
+          <label for="nominativo">Nominativo</label>
+          <input id="nominativo" list="personaleList" placeholder="Es. Mario Rossi" autocomplete="off" required style="text-transform:uppercase;">
+          <datalist id="personaleList"></datalist>
+          <p class="hint">Se il nome non è in elenco viene aggiunto automaticamente.</p>
+        </div>
+        <div>
+          <label for="associazione">Associazione</label>
+          <input id="associazione" list="associazioneList" placeholder="Es. Gruppo AIB Comune di..." autocomplete="off">
+          <datalist id="associazioneList"></datalist>
+        </div>
+        <div>
+          <label for="tipo">Tipo di reperibilità</label>
+          <select id="tipo" required>
+            <option value="Reperibile">Reperibile</option>
+            <option value="Spegnimento">Spegnimento</option>
+            <option value="Avvistamento">Avvistamento</option>
+            <option value="Sala Radio">Sala Radio</option>
+          </select>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="data">Data</label>
+            <input type="date" id="data" required>
+          </div>
+          <div></div>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="dalle">Dalle</label>
+            <input type="time" id="dalle" value="08:00" required>
+          </div>
+          <div>
+            <label for="alle">Alle</label>
+            <input type="time" id="alle" value="20:00" required>
+          </div>
+        </div>
+        <div>
+          <label for="note">Note <span style="text-transform:none;letter-spacing:0;">(opzionale)</span></label>
+          <input id="note" placeholder="Es. sostituzione, zona coperta...">
+        </div>
+        <button type="submit" class="btn-primary" id="submitBtn">Aggiungi turno</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Turni pianificati</h2>
+      <div class="pending-banner" id="pendingBanner"></div>
+      <div class="toolbar">
+        <div class="field">
+          <label for="searchNome">Cerca nominativo</label>
+          <input id="searchNome" placeholder="Filtra per nome...">
+        </div>
+        <div class="field">
+          <label for="filterTipo">Tipo</label>
+          <select id="filterTipo">
+            <option value="">Tutti</option>
+            <option value="Reperibile">Reperibile</option>
+            <option value="Spegnimento">Spegnimento</option>
+            <option value="Avvistamento">Avvistamento</option>
+            <option value="Sala Radio">Sala Radio</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filterData">Data</label>
+          <input type="date" id="filterData">
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button class="btn-ghost" id="btnHidePast" type="button" style="white-space:nowrap;">Nascondi turni passati</button>
+        </div>
+        <div class="io-buttons">
+          <a class="btn-ghost" id="btnOpenSheet" href="https://docs.google.com/spreadsheets/d/11UEJ8k6O6PrV31ATWNUPNi4gYk2JHOC01GKIV1bE5GM/edit" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;">Apri Google Sheet ↗</a>
+          <button class="btn-ghost" id="btnRefresh" type="button">Aggiorna</button>
+          <button class="btn-ghost" id="btnImport" type="button">Importa Excel</button>
+          <button class="btn-primary" id="btnExport" type="button">Esporta Excel</button>
+          <button class="btn-ghost" id="btnAdmin" type="button">🔒 Modalità amministratore</button>
+          <input type="file" id="fileInput" accept=".xlsx,.xls">
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Nominativo</th>
+            <th>Associazione</th>
+            <th>Tipo</th>
+            <th>Data</th>
+            <th>Orario</th>
+            <th>Note</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty" id="emptyState" style="display:none;">Nessun turno registrato. <b>Aggiungi il primo turno dal modulo a sinistra.</b></div>
+
+      <div class="status-line">
+        <span>Collegato al <a href="https://docs.google.com/spreadsheets/d/11UEJ8k6O6PrV31ATWNUPNi4gYk2JHOC01GKIV1bE5GM/edit" target="_blank" rel="noopener" style="color:var(--ember-400);">foglio Google condiviso ↗</a> — dati in tempo reale per tutti gli utenti.</span>
+        <span id="syncStatus" class="live">● sincronizzato</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================================
+// CONFIGURAZIONE — incolla qui l'URL del tuo Web App Apps Script
+// ==========================================================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbze7SyuOU0-hvV1eZHM4W3BATS_Yc2aE7t9L_RRyD-37PyELZ2F-uAahtYHRiS9ttV5/exec";
+
+const ROLE_COLORS = {
+  'Reperibile':  { bg:'rgba(31,92,143,.30)',  fg:'#8FC5FF' },
+  'Spegnimento': { bg:'rgba(191,54,12,.25)',  fg:'#FF9466' },
+  'Avvistamento':{ bg:'rgba(199,125,2,.25)',  fg:'#FFC978' },
+  'Sala Radio':  { bg:'rgba(11,93,107,.30)',  fg:'#7FE0EE' }
+};
+
+let state = { turni: [] };
+const CONFIGURED = !SCRIPT_URL.startsWith('INCOLLA_QUI');
+
+// ==========================================================
+// PROTEZIONE CANCELLAZIONE — solo un amministratore può
+// cancellare direttamente un turno. Cambia questo codice.
+// ==========================================================
+const ADMIN_PIN = "AIB2026";
+
+function isAdmin(){
+  return sessionStorage.getItem('aib_admin') === '1';
+}
+
+// I turni con richiesta di cancellazione o modifica in attesa vengono
+// marcati con un prefisso nel campo Note (scritto dal backend), così
+// non serve un foglio separato per tracciare le richieste.
+const DEL_MARKER_RE = /^\[\[DEL_REQ:([^\]|]*)\|([^\]]*)\]\]\s*/;
+const UPD_MARKER_RE = /^\[\[UPD_REQ:([^\]|]*)\|([^\]|]*)\|[^\]]*\]\]\s*/;
+function parseNote(note){
+  const raw = note || '';
+  let m = raw.match(DEL_MARKER_RE);
+  if(m){
+    return { pending: true, kind: 'delete', requestedAt: m[1], richiedente: m[2], cleanNote: raw.replace(DEL_MARKER_RE, '') };
+  }
+  m = raw.match(UPD_MARKER_RE);
+  if(m){
+    return { pending: true, kind: 'update', requestedAt: m[1], richiedente: m[2], cleanNote: raw.replace(UPD_MARKER_RE, '') };
+  }
+  return { pending: false, kind: null, requestedAt: null, richiedente: '', cleanNote: raw };
+}
+
+if(!CONFIGURED){
+  document.getElementById('setupBanner').classList.add('show');
+  document.getElementById('submitBtn').disabled = true;
+}
+
+async function apiList(){
+  const res = await fetch(SCRIPT_URL + '?action=list');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'errore lettura');
+  return json.turni.map(t => ({
+    id: t.ID, nominativo: t.Nominativo, associazione: t.Associazione || '', tipo: t.Tipo,
+    data: t.Data, dalle: t.Dalle, alle: t.Alle, note: t.Note
+  }));
+}
+async function apiAdd(record){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'add', ...record })
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'errore scrittura');
+  return json;
+}
+async function apiUpdate(id, record){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'update', id, ...record })
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'errore aggiornamento');
+  return json;
+}
+async function apiDelete(id){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'delete', id })
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'errore cancellazione');
+  return json;
+}
+async function apiRequestDelete(id, richiedente){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'requestDelete', id, richiedente: richiedente || '' })
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'errore invio richiesta');
+  return json;
+}
+async function apiRequestUpdate(id, record, richiedente){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'requestUpdate', id, richiedente: richiedente || '', ...record })
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'errore invio richiesta di modifica');
+  return json;
+}
+async function apiConfirmUpdate(id){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'confirmUpdate', id })
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'errore conferma modifica');
+  return json;
+}
+async function apiDenyUpdate(id){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'denyUpdate', id })
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'errore rifiuto modifica');
+  return json;
+}
+
+function setSyncStatus(ok, msg){
+  const s = document.getElementById('syncStatus');
+  s.className = ok ? 'live' : 'err';
+  s.textContent = ok ? '● sincronizzato' : ('● ' + (msg || 'errore di connessione'));
+}
+
+async function loadAll(){
+  if(!CONFIGURED) return;
+  try{
+    state.turni = await apiList();
+    renderAll();
+    setSyncStatus(true);
+  }catch(err){
+    console.error(err);
+    setSyncStatus(false, 'connessione al foglio non riuscita');
+  }
+}
+
+function todayIsoLocal(){
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDataIt(iso){
+  if(!iso) return '';
+  const parts = String(iso).split('-');
+  if(parts.length !== 3) return iso;
+  const [y,m,d] = parts;
+  return `${d}/${m}/${y}`;
+}
+function getPersonale(){
+  return Array.from(new Set(state.turni.map(t => t.nominativo))).sort((a,b)=>a.localeCompare(b));
+}
+function getAssociazioni(){
+  return Array.from(new Set(state.turni.map(t => t.associazione).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+}
+function renderPersonaleList(){
+  const dl = document.getElementById('personaleList');
+  dl.innerHTML = getPersonale().map(n => `<option value="${escapeHtml(n)}">`).join('');
+  const dla = document.getElementById('associazioneList');
+  dla.innerHTML = getAssociazioni().map(n => `<option value="${escapeHtml(n)}">`).join('');
+}
+let hidePast = false;
+
+function getFilteredSorted(){
+  const nome = document.getElementById('searchNome').value.trim().toLowerCase();
+  const tipo = document.getElementById('filterTipo').value;
+  const data = document.getElementById('filterData').value;
+  const todayIso = todayIsoLocal();
+  let rows = state.turni.filter(t => {
+    if(nome && !t.nominativo.toLowerCase().includes(nome)) return false;
+    if(tipo && t.tipo !== tipo) return false;
+    if(data && t.data !== data) return false;
+    if(hidePast && t.data < todayIso) return false;
+    return true;
+  });
+  rows.sort((a,b) => (a.data+a.dalle).localeCompare(b.data+b.dalle));
+  return rows;
+}
+let editingId = null;
+const TIPI = ['Reperibile','Spegnimento','Avvistamento','Sala Radio'];
+
+function renderTable(){
+  const rows = getFilteredSorted();
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  if(rows.length === 0){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = rows.map(t => {
+    if(t.id === editingId){
+      const tipoOpts = TIPI.map(x => `<option value="${x}" ${x===t.tipo?'selected':''}>${x}</option>`).join('');
+      const saveBtn = isAdmin()
+        ? `<button class="btn-ghost" style="padding:4px 8px;font-size:12px;" onclick="salvaModifica('${t.id}')">Salva</button>`
+        : `<button class="btn-ghost" style="padding:4px 8px;font-size:12px;" onclick="proponiModifica('${t.id}')">Proponi modifica</button>`;
+      return `<tr data-editrow="${t.id}">
+        <td><input type="text" value="${escapeHtml(t.nominativo)}" data-field="nominativo" style="min-width:110px;text-transform:uppercase;"></td>
+        <td><input type="text" value="${escapeHtml(t.associazione||'')}" data-field="associazione" style="min-width:110px;"></td>
+        <td><select data-field="tipo">${tipoOpts}</select></td>
+        <td><input type="date" value="${escapeHtml(t.data)}" data-field="data" style="min-width:130px;"></td>
+        <td style="display:flex;gap:4px;">
+          <input type="time" value="${escapeHtml(t.dalle)}" data-field="dalle" style="min-width:80px;">
+          <input type="time" value="${escapeHtml(t.alle)}" data-field="alle" style="min-width:80px;">
+        </td>
+        <td><input type="text" value="${escapeHtml(parseNote(t.note).cleanNote)}" data-field="note" style="min-width:110px;"></td>
+        <td style="white-space:nowrap;">
+          ${saveBtn}
+          <button class="btn-danger" onclick="annullaModifica()">Annulla</button>
+        </td>
+      </tr>`;
+    }
+    const c = ROLE_COLORS[t.tipo] || {bg:'rgba(255,255,255,.08)', fg:'#F5F1E4'};
+    const np = parseNote(t.note);
+    const admin = isAdmin();
+    let actions;
+    if(np.pending){
+      const kindLabel = np.kind === 'update' ? 'richiesta modifica' : 'richiesta cancellazione';
+      const kindIcon = np.kind === 'update' ? '🟠' : '🔴';
+      const badgeTitle = `Richiesta inviata il ${escapeHtml(np.requestedAt||'')}${np.richiedente ? ' da ' + escapeHtml(np.richiedente) : ''}`;
+      const badge = `<span class="badge-pending" title="${badgeTitle}">${kindIcon} ${kindLabel}</span>`;
+      if(admin){
+        const confirmFn = np.kind === 'update' ? 'confermaModifica' : 'confermaCancellazione';
+        const denyFn = np.kind === 'update' ? 'rifiutaModifica' : 'rifiutaCancellazione';
+        actions = `${badge}<br><span style="white-space:nowrap;">
+          <button class="btn-confirm" onclick="${confirmFn}('${t.id}')">Conferma</button>
+          <button class="btn-deny" onclick="${denyFn}('${t.id}')">Rifiuta</button>
+        </span>`;
+      } else {
+        actions = `${badge}<br><span style="white-space:nowrap;">
+          <button class="btn-ghost" disabled style="padding:4px 8px;font-size:12px;">In attesa di admin</button>
+        </span>`;
+      }
+    } else if(admin){
+      actions = `<span style="white-space:nowrap;">
+        <button class="btn-ghost" style="padding:4px 8px;font-size:12px;" onclick="avviaModifica('${t.id}')">Modifica</button>
+        <button class="btn-danger" onclick="handleDeleteClick('${t.id}')">Rimuovi</button>
+      </span>`;
+    } else {
+      actions = `<span style="white-space:nowrap;">
+        <button class="btn-ghost" style="padding:4px 8px;font-size:12px;" onclick="avviaModifica('${t.id}')">Proponi modifica</button>
+        <button class="btn-danger" onclick="handleDeleteClick('${t.id}')">Richiedi cancellazione</button>
+      </span>`;
+    }
+    return `<tr${np.pending ? ' class="row-pending"' : ''}>
+      <td>${escapeHtml(t.nominativo)}</td>
+      <td>${escapeHtml(t.associazione || '—')}</td>
+      <td><span class="badge" style="background:${c.bg};color:${c.fg};">${escapeHtml(t.tipo)}</span></td>
+      <td>${fmtDataIt(t.data)}</td>
+      <td class="orario">${escapeHtml(t.dalle)}–${escapeHtml(t.alle)}</td>
+      <td>${escapeHtml(np.cleanNote || '—')}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+
+  const pending = state.turni.filter(t => parseNote(t.note).pending);
+  const pendingDel = pending.filter(t => parseNote(t.note).kind === 'delete').length;
+  const pendingUpd = pending.filter(t => parseNote(t.note).kind === 'update').length;
+  const banner = document.getElementById('pendingBanner');
+  if(pending.length > 0){
+    banner.classList.add('show');
+    const parts = [];
+    if(pendingDel) parts.push(`${pendingDel} cancellazione${pendingDel===1?'':'i'}`);
+    if(pendingUpd) parts.push(`${pendingUpd} modifica${pendingUpd===1?'':'he'}`);
+    const summary = parts.join(' e ');
+    banner.innerHTML = isAdmin()
+      ? `<b>⚠ Richieste in attesa: ${summary}.</b> Trovi i turni evidenziati in tabella: usa <b>Conferma</b> per applicarle o <b>Rifiuta</b> per annullarle.`
+      : `<b>⚠ Richieste in attesa: ${summary}.</b> In attesa di approvazione da parte di un amministratore.`;
+  } else {
+    banner.classList.remove('show');
+    banner.innerHTML = '';
+  }
+}
+function renderStats(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const in7 = new Date(today); in7.setDate(in7.getDate()+7);
+  const todayIso = todayIsoLocal();
+  document.getElementById('statTotal').textContent = state.turni.length;
+  document.getElementById('statPersonale').textContent = getPersonale().length;
+  document.getElementById('statOggi').textContent = state.turni.filter(t => t.data === todayIso).length;
+  document.getElementById('statSettimana').textContent = state.turni.filter(t => {
+    const d = new Date(t.data+'T00:00:00');
+    return d >= today && d <= in7;
+  }).length;
+}
+function renderAll(){
+  renderPersonaleList();
+  renderTable();
+  renderStats();
+}
+
+const giorni = ['DOM','LUN','MAR','MER','GIO','VEN','SAB'];
+const mesi = ['GEN','FEB','MAR','APR','MAG','GIU','LUG','AGO','SET','OTT','NOV','DIC'];
+function tickClock(){
+  const now = new Date();
+  document.getElementById('clockDate').textContent =
+    `${giorni[now.getDay()]} ${String(now.getDate()).padStart(2,'0')} ${mesi[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('clockTime').textContent = now.toLocaleTimeString('it-IT');
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+document.getElementById('turnoForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if(!CONFIGURED){ alert('Collega prima il foglio Google (vedi banner in alto).'); return; }
+
+  const nominativo = document.getElementById('nominativo').value.trim().toUpperCase();
+  const associazione = document.getElementById('associazione').value.trim();
+  const tipo = document.getElementById('tipo').value;
+  const data = document.getElementById('data').value;
+  const dalle = document.getElementById('dalle').value;
+  const alle = document.getElementById('alle').value;
+  const note = document.getElementById('note').value.trim();
+
+  if(!nominativo || !tipo || !data || !dalle || !alle){
+    alert('Compila tutti i campi obbligatori.');
+    return;
+  }
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  try{
+    await apiAdd({ nominativo, associazione, tipo, data, dalle, alle, note });
+    await loadAll();
+    document.getElementById('turnoForm').reset();
+    document.getElementById('dalle').value = '08:00';
+    document.getElementById('alle').value = '20:00';
+    document.getElementById('data').value = todayIsoLocal();
+  }catch(err){
+    console.error(err);
+    alert('Errore durante il salvataggio sul foglio Google. Riprova.');
+  }finally{
+    submitBtn.disabled = false;
+  }
+});
+
+function avviaModifica(id){
+  const t = state.turni.find(x => x.id === id);
+  if(t && parseNote(t.note).pending){
+    alert('Questo turno ha già una richiesta in attesa di approvazione: non può essere modificato finché non viene gestita.');
+    return;
+  }
+  editingId = id;
+  renderTable();
+}
+function annullaModifica(){
+  editingId = null;
+  renderTable();
+}
+async function salvaModifica(id){
+  const tr = document.querySelector(`tr[data-editrow="${id}"]`);
+  if(!tr) return;
+  const get = f => tr.querySelector(`[data-field="${f}"]`).value.trim();
+  const record = {
+    nominativo: get('nominativo').toUpperCase(),
+    associazione: get('associazione'),
+    tipo: get('tipo'),
+    data: get('data'),
+    dalle: get('dalle'),
+    alle: get('alle'),
+    note: get('note')
+  };
+  if(!record.nominativo || !record.tipo || !record.data || !record.dalle || !record.alle){
+    alert('Compila tutti i campi obbligatori.');
+    return;
+  }
+  try{
+    await apiUpdate(id, record);
+    editingId = null;
+    await loadAll();
+  }catch(err){
+    console.error(err);
+    alert('Errore durante il salvataggio delle modifiche. Riprova.');
+  }
+}
+
+// Utente non amministratore: la modifica non viene mai applicata
+// direttamente. I nuovi valori vengono proposti e restano in attesa
+// di conferma da parte di un amministratore (via email o in-app).
+async function proponiModifica(id){
+  const tr = document.querySelector(`tr[data-editrow="${id}"]`);
+  if(!tr) return;
+  const get = f => tr.querySelector(`[data-field="${f}"]`).value.trim();
+  const record = {
+    nominativo: get('nominativo').toUpperCase(),
+    associazione: get('associazione'),
+    tipo: get('tipo'),
+    data: get('data'),
+    dalle: get('dalle'),
+    alle: get('alle')
+  };
+  if(!record.nominativo || !record.tipo || !record.data || !record.dalle || !record.alle){
+    alert('Compila tutti i campi obbligatori.');
+    return;
+  }
+  const richiedente = prompt('Inserisci la tua email (facoltativo): l\'amministratore riceverà una notifica e potrà risponderti direttamente.', '');
+  if(richiedente === null) return; // annullato
+  if(!confirm('Non sei autorizzato a modificare direttamente un turno.\nVuoi inviare questa proposta di modifica all\'amministratore via email?')) return;
+
+  try{
+    const result = await apiRequestUpdate(id, record, richiedente.trim());
+    editingId = null;
+    await loadAll();
+    alert('Proposta di modifica salvata.\n\nStato email: ' + (result.mailStatus || 'sconosciuto'));
+  }catch(err){
+    console.error(err);
+    alert('Errore durante l\'invio della proposta. Riprova.');
+  }
+}
+
+// Utente non amministratore: non cancella mai direttamente, può solo
+// inviare una richiesta di cancellazione che resta visibile (badge rosso +
+// banner) finché un amministratore non la conferma o la rifiuta.
+async function handleDeleteClick(id){
+  const t = state.turni.find(x => x.id === id);
+  if(!t) return;
+
+  if(isAdmin()){
+    if(!confirm(`Confermi la cancellazione definitiva del turno di ${t.nominativo} (${fmtDataIt(t.data)})?`)) return;
+    try{
+      await apiDelete(id);
+      await loadAll();
+    }catch(err){
+      console.error(err);
+      alert('Errore durante la cancellazione. Riprova.');
+    }
+    return;
+  }
+
+  const np = parseNote(t.note);
+  if(np.pending){
+    alert('Per questo turno è già stata inviata una richiesta di cancellazione: è in attesa di conferma da un amministratore.');
+    return;
+  }
+  const richiedente = prompt('Inserisci la tua email (facoltativo): l\'amministratore riceverà una notifica e potrà risponderti direttamente.', '');
+  if(richiedente === null) return; // annullato
+  if(!confirm('Non sei autorizzato a cancellare direttamente un turno.\nVuoi inviare una richiesta di cancellazione all\'amministratore via email?')) return;
+
+  try{
+    const result = await apiRequestDelete(id, richiedente.trim());
+    await loadAll();
+    alert('Richiesta salvata.\n\nStato email: ' + (result.mailStatus || 'sconosciuto'));
+  }catch(err){
+    console.error(err);
+    alert('Errore durante l\'invio della richiesta. Riprova.');
+  }
+}
+
+async function confermaCancellazione(id){
+  const t = state.turni.find(x => x.id === id);
+  if(!t) return;
+  if(!confirm(`Confermi la cancellazione definitiva del turno di ${t.nominativo} (${fmtDataIt(t.data)})?`)) return;
+  try{
+    await apiDelete(id);
+    await loadAll();
+  }catch(err){
+    console.error(err);
+    alert('Errore durante la cancellazione. Riprova.');
+  }
+}
+
+async function rifiutaCancellazione(id){
+  const t = state.turni.find(x => x.id === id);
+  if(!t) return;
+  const cleanNote = parseNote(t.note).cleanNote;
+  try{
+    await apiUpdate(id, { nominativo:t.nominativo, associazione:t.associazione, tipo:t.tipo, data:t.data, dalle:t.dalle, alle:t.alle, note: cleanNote });
+    await loadAll();
+  }catch(err){
+    console.error(err);
+    alert('Errore durante l\'annullamento della richiesta. Riprova.');
+  }
+}
+
+async function confermaModifica(id){
+  const t = state.turni.find(x => x.id === id);
+  if(!t) return;
+  if(!confirm(`Confermi di applicare la modifica proposta per il turno di ${t.nominativo}?`)) return;
+  try{
+    await apiConfirmUpdate(id);
+    await loadAll();
+  }catch(err){
+    console.error(err);
+    alert('Errore durante la conferma della modifica. Riprova.');
+  }
+}
+
+async function rifiutaModifica(id){
+  const t = state.turni.find(x => x.id === id);
+  if(!t) return;
+  try{
+    await apiDenyUpdate(id);
+    await loadAll();
+  }catch(err){
+    console.error(err);
+    alert('Errore durante il rifiuto della modifica. Riprova.');
+  }
+}
+
+['searchNome','filterTipo','filterData'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderTable);
+  document.getElementById(id).addEventListener('change', renderTable);
+});
+
+const btnHidePast = document.getElementById('btnHidePast');
+btnHidePast.addEventListener('click', () => {
+  hidePast = !hidePast;
+  btnHidePast.classList.toggle('active', hidePast);
+  btnHidePast.textContent = hidePast ? 'Turni passati nascosti ✓' : 'Nascondi turni passati';
+  renderTable();
+});
+
+document.getElementById('btnRefresh').addEventListener('click', loadAll);
+setInterval(loadAll, 20000);
+
+function setAdminUI(){
+  const btn = document.getElementById('btnAdmin');
+  if(isAdmin()){
+    btn.textContent = '🔓 Amministratore attivo';
+    btn.classList.add('admin-on');
+  } else {
+    btn.textContent = '🔒 Modalità amministratore';
+    btn.classList.remove('admin-on');
+  }
+  renderTable();
+}
+document.getElementById('btnAdmin').addEventListener('click', () => {
+  if(isAdmin()){
+    if(confirm('Uscire dalla modalità amministratore?')){
+      sessionStorage.removeItem('aib_admin');
+      setAdminUI();
+    }
+    return;
+  }
+  const pin = prompt('Inserisci il codice amministratore per poter cancellare i turni e gestire le richieste di cancellazione:');
+  if(pin === null) return;
+  if(pin === ADMIN_PIN){
+    sessionStorage.setItem('aib_admin', '1');
+    setAdminUI();
+  } else {
+    alert('Codice errato.');
+  }
+});
+setAdminUI();
+
+document.getElementById('btnExport').addEventListener('click', () => {
+  const data = state.turni.map(t => ({
+    Nominativo: t.nominativo, Associazione: t.associazione || '', Tipo: t.tipo, Data: t.data,
+    Dalle: t.dalle, Alle: t.alle, Note: t.note || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:22},{wch:22},{wch:14},{wch:12},{wch:8},{wch:8},{wch:30}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Reperibilità');
+  const stamp = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `reperibilita_aib_${stamp}.xlsx`);
+});
+
+document.getElementById('btnImport').addEventListener('click', () => {
+  if(!CONFIGURED){ alert('Collega prima il foglio Google (vedi banner in alto).'); return; }
+  document.getElementById('fileInput').click();
+});
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const sheetName = wb.SheetNames[0];
+    const sheet = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+
+    if(!rows || rows.length === 0){
+      alert(`Il file non contiene righe leggibili nel primo foglio ("${sheetName}"). Controlla che i dati siano nella prima scheda e che ci sia una riga di intestazione (Nominativo, Tipo, Data, Dalle, Alle, Note).`);
+      return;
+    }
+
+    const existing = state.turni;
+    let aggiunti = 0, duplicati = 0, incompleti = 0, errori = 0;
+
+    for(const r of rows){
+      const nominativo = String(r.Nominativo || r.nominativo || '').trim().toUpperCase();
+      const associazione = String(r.Associazione || r.associazione || '').trim();
+      const tipo = String(r.Tipo || r.tipo || '').trim();
+      let data = r.Data || r.data || '';
+      if(data instanceof Date){
+        data = data.toISOString().slice(0,10);
+      } else {
+        data = String(data).trim();
+      }
+      const dalle = String(r.Dalle || r.dalle || '').trim() || '00:00';
+      const alle = String(r.Alle || r.alle || '').trim() || '00:00';
+      const note = String(r.Note || r.note || '').trim();
+
+      if(!nominativo || !tipo || !data){ incompleti++; continue; }
+
+      const dup = existing.some(t => t.nominativo.toLowerCase()===nominativo.toLowerCase()
+        && t.tipo===tipo && t.data===data && t.dalle===dalle && t.alle===alle);
+      if(dup){ duplicati++; continue; }
+
+      try{
+        await apiAdd({ nominativo, associazione, tipo, data, dalle, alle, note });
+        existing.push({ nominativo, associazione, tipo, data, dalle, alle, note });
+        aggiunti++;
+      }catch(err){
+        console.error('Errore importando riga', r, err);
+        errori++;
+      }
+    }
+
+    await loadAll();
+    alert(`Importazione completata.\nRighe aggiunte: ${aggiunti}\nDuplicate (saltate): ${duplicati}\nIncomplete (saltate): ${incompleti}\nErrori di scrittura: ${errori}`);
+  }catch(err){
+    console.error('Errore durante la lettura del file Excel', err);
+    alert('Non sono riuscito a leggere il file Excel selezionato.\nDettaglio tecnico: ' + (err && err.message ? err.message : err) + '\n\nControlla che sia un file .xlsx valido (non .xls vecchio formato o un file protetto da password).');
+  }finally{
+    e.target.value = '';
+  }
+});
+
+document.getElementById('data').value = todayIsoLocal();
+loadAll();
+</script>
+</body>
+</html>

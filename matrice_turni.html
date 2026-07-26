@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Vista in sola lettura della matrice di reperibilita AIB per data e tipologia.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔥</text></svg>">
+<title>Matrice Reperibilità AIB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Text:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --forest-900:#0A1F33;
+  --forest-800:#0F2E4D;
+  --forest-700:#17456E;
+  --forest-600:#1F5C8F;
+  --ember-500:#E85D04;
+  --ember-400:#F48C06;
+  --ember-glow:rgba(232,93,4,.35);
+  --ink-100:#F5F1E4;
+  --ink-300:#D9D3C0;
+  --ink-500:#A9B6A9;
+  --line:rgba(245,241,228,.12);
+  --line-strong:rgba(245,241,228,.22);
+  --ok:#3E8E5A;
+  --danger:#C1121F;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(31,92,143,.38), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(232,93,4,.10), transparent 55%),
+    var(--forest-900);
+  color:var(--ink-100);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 20px 60px;}
+
+.setup-banner{
+  display:none;
+  background:linear-gradient(135deg,#3A2405,#241600);
+  border:1px solid #E8A004;
+  border-radius:var(--radius);
+  padding:16px 18px;margin-bottom:18px;
+  font-size:13.5px;line-height:1.55;
+}
+.setup-banner.show{display:block;}
+.setup-banner b{color:#E8A004;}
+.setup-banner code{background:rgba(0,0,0,.35);padding:1px 6px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+
+header{
+  display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;
+  padding:18px 22px;border-radius:var(--radius);
+  background:linear-gradient(135deg,var(--forest-800),var(--forest-700));
+  border:1px solid var(--line-strong);
+  margin-bottom:18px;
+  position:relative;overflow:hidden;
+}
+header::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg, rgba(245,241,228,.035) 0 2px, transparent 2px 26px);
+  pointer-events:none;
+}
+.brand{position:relative;z-index:1;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--ember-400);text-transform:uppercase;margin:0 0 4px;}
+h1{font-family:'Big Shoulders Text',sans-serif;font-weight:800;font-size:clamp(24px,4vw,34px);letter-spacing:.01em;text-transform:uppercase;margin:0;line-height:1;}
+.header-links{position:relative;z-index:1;display:flex;gap:8px;flex-wrap:wrap;}
+
+.btn-ghost{
+  font-family:'Inter',sans-serif;font-weight:600;font-size:13px;cursor:pointer;
+  border-radius:7px;border:1px solid var(--line-strong);padding:9px 13px;
+  background:transparent;color:var(--ink-100);text-decoration:none;display:inline-flex;align-items:center;
+}
+.btn-ghost:hover{border-color:var(--ember-400);color:var(--ember-400);}
+.btn-ghost.active{background:var(--ember-500);color:#241000;border-color:var(--ember-500);}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.stat{background:var(--forest-800);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;}
+.stat .n{font-family:'Big Shoulders Text',sans-serif;font-size:28px;font-weight:700;color:var(--ink-100);line-height:1;}
+.stat .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-500);margin-top:6px;}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr);}}
+
+.panel{background:var(--forest-800);border:1px solid var(--line);border-radius:var(--radius);padding:18px;}
+.panel h2{
+  font-family:'Big Shoulders Text',sans-serif;font-size:18px;letter-spacing:.04em;text-transform:uppercase;
+  margin:0 0 14px;color:var(--ink-100);display:flex;align-items:center;gap:8px;
+}
+.panel h2::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ember-500);box-shadow:0 0 8px var(--ember-glow);}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end;}
+.toolbar .field{flex:1;min-width:160px;}
+.toolbar label{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-500);display:block;margin-bottom:5px;}
+.toolbar input{
+  width:100%;background:var(--forest-900);border:1px solid var(--line-strong);color:var(--ink-100);
+  border-radius:7px;padding:9px 10px;font-family:'Inter',sans-serif;font-size:14px;
+}
+.toolbar input:focus{outline:2px solid var(--ember-400);outline-offset:1px;border-color:var(--ember-400);}
+
+.table-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:720px;}
+thead th{
+  text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-500);padding:10px 12px;border-bottom:1px solid var(--line-strong);
+  position:sticky;top:0;background:var(--forest-800);
+}
+th.col-data{white-space:nowrap;}
+tbody td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;}
+tbody tr:hover{background:rgba(245,241,228,.03);}
+tbody tr.today-row td{background:rgba(232,93,4,.07);}
+.data-cell{font-family:'IBM Plex Mono',monospace;color:var(--ink-100);white-space:nowrap;font-weight:600;}
+.data-cell .dow{display:block;font-size:10px;color:var(--ink-500);font-weight:400;letter-spacing:.06em;text-transform:uppercase;}
+.person-chip{
+  display:block;padding:3px 9px;border-radius:20px;margin-bottom:4px;
+  font-size:12px;font-weight:600;white-space:nowrap;
+}
+.person-chip .assoc{display:block;font-weight:400;font-size:10.5px;opacity:.85;}
+.empty-cell{color:var(--ink-500);font-size:12px;}
+.empty{text-align:center;padding:40px 10px;color:var(--ink-500);}
+.empty b{color:var(--ink-100);}
+
+.status-line{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-500);margin-top:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.status-line span.live{color:var(--ok);}
+.status-line span.err{color:var(--danger);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="setup-banner" id="setupBanner">
+    <b>⚠ Collegamento non configurato.</b> Apri il file HTML con un editor di testo, cerca la riga
+    <code>const SCRIPT_URL = "INCOLLA_QUI_IL_TUO_URL_APPS_SCRIPT";</code> e sostituiscila con l'URL del tuo Web App Apps Script (lo stesso già usato nella pagina di inserimento turni).
+  </div>
+
+  <header>
+    <div class="brand">
+      <p class="eyebrow">Coordinamento AIB · Antincendio Boschivo</p>
+      <h1>Matrice Reperibilità — Vista di sola lettura</h1>
+    </div>
+    <div class="header-links">
+      <a class="btn-ghost" href="reperibilita_aib.html">📋 Registro Reperibilità</a>
+      <a class="btn-ghost" href="activity.html">🧭 Activity — Squadre</a>
+      <button class="btn-ghost" id="btnHidePast" type="button">Vedi date passate</button>
+      <button class="btn-ghost" id="btnRefresh" type="button">Aggiorna</button>
+      <a class="btn-ghost" href="https://docs.google.com/spreadsheets/d/11UEJ8k6O6PrV31ATWNUPNi4gYk2JHOC01GKIV1bE5GM/edit" target="_blank" rel="noopener">Apri Google Sheet ↗</a>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="statGiorni">0</div><div class="l">Giorni con turni</div></div>
+    <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Turni totali</div></div>
+    <div class="stat"><div class="n" id="statPersonale">0</div><div class="l">Persone coinvolte</div></div>
+    <div class="stat"><div class="n" id="statOggi">0</div><div class="l">Turni oggi</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Nominativi per data e tipologia</h2>
+    <div class="toolbar">
+      <div class="field">
+        <label for="searchNome">Cerca nominativo o associazione</label>
+        <input id="searchNome" placeholder="Filtra per nome o associazione...">
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-data">Data</th>
+            <th>Reperibile</th>
+            <th>Spegnimento</th>
+            <th>Avvistamento</th>
+            <th>Sala Radio</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState" style="display:none;">Nessun turno da mostrare con i filtri attuali.</div>
+
+    <div class="status-line">
+      <span>Collegato al <a href="https://docs.google.com/spreadsheets/d/11UEJ8k6O6PrV31ATWNUPNi4gYk2JHOC01GKIV1bE5GM/edit" target="_blank" rel="noopener" style="color:var(--ember-400);">foglio Google condiviso ↗</a> — sola lettura, si aggiorna da sé.</span>
+      <span id="syncStatus" class="live">● sincronizzato</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================================
+// CONFIGURAZIONE — stesso URL già usato nella pagina di
+// inserimento turni.
+// ==========================================================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbze7SyuOU0-hvV1eZHM4W3BATS_Yc2aE7t9L_RRyD-37PyELZ2F-uAahtYHRiS9ttV5/exec";
+
+const TIPI = ['Reperibile', 'Spegnimento', 'Avvistamento', 'Sala Radio'];
+const ROLE_COLORS = {
+  'Reperibile':  { bg:'rgba(31,92,143,.30)',  fg:'#8FC5FF' },
+  'Spegnimento': { bg:'rgba(191,54,12,.25)',  fg:'#FF9466' },
+  'Avvistamento':{ bg:'rgba(199,125,2,.25)',  fg:'#FFC978' },
+  'Sala Radio':  { bg:'rgba(11,93,107,.30)',  fg:'#7FE0EE' }
+};
+
+const DEL_MARKER_RE = /^\[\[DEL_REQ:([^\]]*)\|([^\]]*)\]\]\s*/;
+
+let turni = [];
+let hidePast = true;
+const CONFIGURED = !SCRIPT_URL.startsWith('INCOLLA_QUI');
+
+if(!CONFIGURED){
+  document.getElementById('setupBanner').classList.add('show');
+}
+
+function todayIsoLocal(){
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDataIt(iso){
+  const parts = String(iso).split('-');
+  if(parts.length !== 3) return iso;
+  const [y,m,d] = parts;
+  return `${d}/${m}/${y}`;
+}
+const GIORNI = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+function dowIt(iso){
+  const d = new Date(iso + 'T00:00:00');
+  if(isNaN(d)) return '';
+  return GIORNI[d.getDay()];
+}
+
+async function apiList(){
+  const res = await fetch(SCRIPT_URL + '?action=list');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'errore lettura');
+  return json.turni.map(t => ({
+    id: t.ID, nominativo: t.Nominativo, associazione: t.Associazione || '',
+    tipo: t.Tipo, data: t.Data, dalle: t.Dalle, alle: t.Alle,
+    note: String(t.Note || '')
+  }));
+}
+
+function setSyncStatus(ok, msg){
+  const s = document.getElementById('syncStatus');
+  s.className = ok ? 'live' : 'err';
+  s.textContent = ok ? '● sincronizzato' : ('● ' + (msg || 'errore di connessione'));
+}
+
+async function loadAll(){
+  if(!CONFIGURED) return;
+  try{
+    turni = await apiList();
+    renderAll();
+    setSyncStatus(true);
+  }catch(err){
+    console.error(err);
+    setSyncStatus(false, 'connessione al foglio non riuscita');
+  }
+}
+
+function isPending(note){
+  return DEL_MARKER_RE.test(note || '');
+}
+
+function renderStats(filtered){
+  const todayIso = todayIsoLocal();
+  const dates = new Set(filtered.map(t => t.data));
+  const persone = new Set(filtered.map(t => t.nominativo));
+  document.getElementById('statGiorni').textContent = dates.size;
+  document.getElementById('statTotal').textContent = filtered.length;
+  document.getElementById('statPersonale').textContent = persone.size;
+  document.getElementById('statOggi').textContent = filtered.filter(t => t.data === todayIso).length;
+}
+
+function renderTable(){
+  const search = document.getElementById('searchNome').value.trim().toLowerCase();
+  const todayIso = todayIsoLocal();
+
+  let filtered = turni.filter(t => {
+    if(hidePast && t.data < todayIso) return false;
+    if(search){
+      const hay = (t.nominativo + ' ' + (t.associazione||'')).toLowerCase();
+      if(!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  renderStats(filtered);
+
+  // Raggruppa per data -> tipo -> lista persone
+  const byDate = {};
+  filtered.forEach(t => {
+    if(!byDate[t.data]) byDate[t.data] = {};
+    if(!byDate[t.data][t.tipo]) byDate[t.data][t.tipo] = [];
+    byDate[t.data][t.tipo].push(t);
+  });
+
+  const dates = Object.keys(byDate).sort();
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if(dates.length === 0){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = dates.map(data => {
+    const isToday = data === todayIso;
+    const cells = TIPI.map(tipo => {
+      const persone = byDate[data][tipo];
+      if(!persone || persone.length === 0){
+        return `<td><span class="empty-cell">—</span></td>`;
+      }
+      const c = ROLE_COLORS[tipo] || {bg:'rgba(255,255,255,.08)', fg:'#F5F1E4'};
+      const chips = persone.map(t => {
+        const pendingMark = isPending(t.note) ? ' 🔴' : '';
+        return `<span class="person-chip" style="background:${c.bg};color:${c.fg};">
+          ${escapeHtml(t.nominativo)}${pendingMark}
+          ${t.associazione ? `<span class="assoc">${escapeHtml(t.associazione)}</span>` : ''}
+        </span>`;
+      }).join('');
+      return `<td>${chips}</td>`;
+    }).join('');
+    return `<tr${isToday ? ' class="today-row"' : ''}>
+      <td class="data-cell">${fmtDataIt(data)}<span class="dow">${dowIt(data)}</span></td>
+      ${cells}
+    </tr>`;
+  }).join('');
+}
+
+function renderAll(){
+  renderTable();
+}
+
+document.getElementById('searchNome').addEventListener('input', renderTable);
+
+const btnHidePast = document.getElementById('btnHidePast');
+btnHidePast.addEventListener('click', () => {
+  hidePast = !hidePast;
+  btnHidePast.classList.toggle('active', !hidePast);
+  btnHidePast.textContent = hidePast ? 'Vedi date passate' : 'Date passate visibili ✓';
+  renderTable();
+});
+
+document.getElementById('btnRefresh').addEventListener('click', loadAll);
+setInterval(loadAll, 20000);
+
+loadAll();
+</script>
+</body>
+</html>
